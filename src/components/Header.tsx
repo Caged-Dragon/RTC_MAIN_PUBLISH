@@ -1,57 +1,61 @@
 import Image from "next/image";
 import { getSettings, whatsappUrl } from "@/lib/cms";
 import { CART_URL } from "@/lib/utils";
-import ThemeToggle from "@/components/ThemeToggle";
+import HeaderSearch from "@/components/HeaderSearch";
 import MobileNav from "@/components/MobileNav";
 import { CartIcon, WhatsAppIcon } from "@/components/icons";
 
-/** Single-page portfolio: the six sections the header exposes, in display order. */
 const NAV = [
   { href: "#top", label: "Home" },
-  { href: "#about", label: "About" },
-  { href: "#catalogue", label: "Products" },
-  { href: "#shipping", label: "Shipping" },
+  { href: "#catalogue", label: "Shop all" },
+  { href: "#categories", label: "Categories" },
+  { href: "#combos", label: "Combos" },
+  { href: "#about", label: "About us" },
+  { href: "#shipping", label: "Delivery" },
   { href: "#safety", label: "Safety" },
-  { href: "#contact", label: "Contact" },
+  { href: "#company-details", label: "Contact" },
 ];
 
+/** Responsive two-tier navigation inspired by the supplied desktop/mobile reference. */
 export default async function Header() {
   const s = await getSettings();
-  const name = s["site.name"] ?? "RT Crackers";
+  const name = s["site.name"] ?? "REDTHUNDER CRACKERS";
   const logo = s["site.logo_url"];
   const wa = whatsappUrl(s);
+  const phone = s["site.whatsapp_number"] || s["site.support_phone"] || s["site.mobile"];
+
   return (
     <header data-rtc-component="header" className="site-header sticky top-0 z-50 border-b backdrop-blur-xl">
-      <div className="site-header-inner relative mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 lg:gap-6 lg:px-6">
-        <a href="#top" className="flex min-w-0 shrink items-center gap-3" aria-label={`${name} – back to top`}>
+      <div className="header-main-row mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 lg:px-6">
+        <a href="#top" className="header-brand flex min-w-0 shrink-0 items-center gap-2" aria-label={`${name} – home`}>
           {logo ? (
-            <Image src={logo} alt="RT Crackers official logo" width={170} height={56} priority className="site-logo h-11 w-auto max-w-[12rem] rounded-lg object-contain" />
+            <Image src={logo} alt={`${name} logo`} width={185} height={62} priority className="site-logo h-12 w-auto max-w-[12rem] object-contain" />
           ) : (
-            <span className="truncate text-xl font-black text-primary">{name}</span>
+            <span className="header-brand-text">{name}</span>
           )}
         </a>
 
-        <nav className="hidden flex-1 items-center justify-center gap-7 text-sm font-semibold lg:flex" aria-label="Main navigation">
-          {NAV.map((l) => (
-            <a key={l.href} href={l.href} className="nav-link">{l.label}</a>
-          ))}
-        </nav>
+        <HeaderSearch className="header-search-desktop hidden lg:flex" />
 
-        <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
+        <div className="header-actions ml-auto flex shrink-0 items-center gap-2">
           {wa && (
-            <a href={wa} target="_blank" rel="noopener noreferrer" className="whatsapp-button" aria-label="Chat with us on WhatsApp (opens in a new tab)">
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="header-whatsapp" aria-label="Contact customer support on WhatsApp">
               <WhatsAppIcon />
-              <span className="hidden sm:inline">WhatsApp</span>
+              <span className="header-action-copy"><strong>WhatsApp</strong><small>Order &amp; support</small></span>
             </a>
           )}
-          <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="cart-button" aria-label="Cart (opens the ordering site in a new tab)">
+          <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="header-cart" aria-label="Open the ordering cart">
             <CartIcon />
-            <span className="hidden sm:inline">Cart</span>
+            <span>Cart</span>
           </a>
-          <ThemeToggle />
-          <MobileNav links={NAV} cartUrl={CART_URL} />
         </div>
       </div>
+
+      <div className="header-mobile-search mx-auto max-w-7xl px-3 pb-3 lg:hidden">
+        <HeaderSearch className="header-search-mobile" />
+      </div>
+
+      <MobileNav links={NAV} />
     </header>
   );
 }

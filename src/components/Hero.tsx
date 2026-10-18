@@ -1,58 +1,112 @@
 import Image from "next/image";
-import type { Banner, Settings } from "@/lib/cms";
-import { CART_URL } from "@/lib/utils";
-import { CartIcon } from "@/components/icons";
+import type { Settings } from "@/lib/cms";
 
-type Props = { banner?: Banner; settings: Settings; productCount: number; categoryCount: number; priceYear?: number };
 
-export default function Hero({ banner, settings, productCount, categoryCount, priceYear }: Props) {
+type Props = {
+  settings: Settings;
+  productCount: number;
+  categoryCount: number;
+  priceYear?: number;
+};
+
+/** Shopping-first hero. CMS-managed offer banners render immediately after this section. */
+export default function Hero({ settings, productCount, categoryCount, priceYear }: Props) {
   const name = settings["site.name"] ?? "RT Crackers";
-  const place = [settings["site.city"], settings["site.state"]].filter(Boolean).join(" • ");
-  const tagline = banner?.title && banner.title.trim().toLowerCase() !== name.toLowerCase() ? banner.title : (settings["site.tagline"] || null);
-  const description = banner?.subtitle ?? settings["site.description"] ?? `${name} — fireworks and crackers, with a full product catalogue and a simple way to order.`;
+  const place = [settings["site.city"], settings["site.district"], settings["site.state"]]
+    .filter(Boolean)
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .join(" · ");
+  const tagline = "Discover crackers for every celebration.";
+  const description = "Explore our collection and find the right picks for your family and festive moments.";
   const logo = settings["site.logo_url"];
+
   return (
-    <section id="home" className="relative isolate overflow-hidden">
-      <div className="hero-bg" aria-hidden="true" />
-      {/* decorative fireworks: static CSS bursts + a few softly twinkling sparks */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <span className="burst" style={{ "--s": "clamp(220px,34vw,460px)", top: "-9%", right: "-6%", "--o": ".38" } as React.CSSProperties} />
-        <span className="burst" style={{ "--s": "clamp(150px,20vw,300px)", bottom: "-10%", left: "-4%", "--o": ".30", "--r": "7deg", "--c": "var(--burst-b)" } as React.CSSProperties} />
-        <span className="burst hidden md:block" style={{ "--s": "220px", top: "14%", left: "46%", "--o": ".20", "--r": "3deg" } as React.CSSProperties} />
-        <div>
-          <span className="spark" style={{ top: "18%", left: "9%" }} />
-          <span className="spark" style={{ top: "62%", left: "38%" }} />
-          <span className="spark" style={{ top: "28%", left: "58%" }} />
-          <span className="spark" style={{ top: "76%", right: "12%" }} />
-          <span className="spark hidden sm:block" style={{ top: "10%", right: "26%" }} />
-        </div>
-      </div>
+    <section id="home" className="hero-section relative isolate overflow-hidden">
+      <div className="hero-backdrop" aria-hidden="true" />
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:py-12 lg:px-6 lg:py-14">
+        <div className="hero-panel grid items-center gap-8 lg:grid-cols-[1fr_.92fr] lg:gap-10">
+          <div className="hero-copy py-3 sm:py-5 lg:py-7">
+            {place && (
+              <p className="hero-location eyebrow mb-5 inline-flex items-center gap-2 rounded-full px-3 py-2 !text-xs !tracking-[.14em]">
+                <span className="hero-location-dot" aria-hidden="true" /> {place}
+              </p>
+            )}
+            <p className="hero-kicker mb-3 text-xs font-black uppercase tracking-[.22em] sm:text-sm">
+              RT CRACKERS · FESTIVE COLLECTION
+            </p>
+            <h1 data-rtc-component="hero_heading" className="hero-title max-w-3xl text-4xl font-black leading-[.98] sm:text-6xl xl:text-7xl">
+              Light Up Every Celebration.
+            </h1>
+            {tagline && (
+              <p data-rtc-component="hero_tagline" className="hero-tagline mt-5 max-w-2xl text-xl font-bold leading-snug sm:text-2xl">
+                {tagline}
+              </p>
+            )}
+            <p data-rtc-component="hero_description" className="hero-description mt-5 max-w-2xl text-base leading-7 sm:text-lg sm:leading-8">
+              {description}
+            </p>
 
-      <div className="hero-shell mx-auto grid min-h-[64vh] max-w-7xl items-center gap-10 px-4 py-14 sm:gap-12 sm:py-20 lg:grid-cols-[1.1fr_.9fr] lg:px-6">
-        <div>
-          {place && <p className="eyebrow hero-rise mb-4 !text-sm !tracking-[.22em]">{place}</p>}
-          <h1 data-rtc-component="hero_heading" className="hero-title gradient-heading gradient-heading--animated hero-rise hero-rise-2 max-w-4xl text-5xl font-black leading-[1] sm:text-7xl">{name}</h1>
-          {tagline && <p data-rtc-component="hero_tagline" className="accent-text hero-rise hero-rise-2 mt-4 text-xl sm:text-2xl">{tagline}</p>}
-          <p data-rtc-component="hero_description" className="hero-rise hero-rise-3 mt-5 max-w-2xl text-lg leading-8 text-[var(--muted)]">{description}</p>
-          <div className="hero-actions hero-rise hero-rise-3 mt-9 flex flex-wrap gap-3">
-            <a href="#catalogue" className="brand-button px-6 py-3 text-base">Explore Products</a>
-            <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="ghost-button px-6 py-3 text-base"><CartIcon />View Cart</a>
-          </div>
-          <div className="hero-stats hero-rise hero-rise-3 mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm text-[var(--muted)]">
-            {productCount > 0 && <span><b className="hero-stat-value accent-text text-2xl">{productCount}+</b><br />catalogue items</span>}
-            {categoryCount > 0 && <span><b className="hero-stat-value accent-text text-2xl">{categoryCount}</b><br />categories</span>}
-            {priceYear ? <span><b className="hero-stat-value accent-text text-2xl">{priceYear}</b><br />price list</span> : null}
-          </div>
-        </div>
+            <div className="hero-actions mt-7 flex flex-wrap gap-3">
+              <a href="#catalogue" className="brand-button px-5 py-3.5 text-base sm:px-6">
+                Shop now <span aria-hidden="true">→</span>
+              </a>
+              <a href="#categories" className="ghost-button px-5 py-3.5 text-base sm:px-6">
+                Browse categories
+              </a>
+            </div>
 
-        {logo && (
-          <div className="hidden justify-self-end lg:flex">
-            <div className="logo-card rounded-[2rem] p-6">
-              <Image src={logo} alt="RT Crackers" width={440} height={240} className="h-auto w-[26rem] max-w-full rounded-2xl object-contain" />
-              <p className="accent-text mt-4 text-center text-xs uppercase tracking-[.25em]">Official company portfolio</p>
+            <div className="hero-stats mt-8 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-7">
+              {productCount > 0 && (
+                <div className="hero-stat">
+                  <b>{productCount.toLocaleString("en-IN")}</b>
+                  <span>products to explore</span>
+                </div>
+              )}
+              {categoryCount > 0 && (
+                <div className="hero-stat">
+                  <b>{categoryCount.toLocaleString("en-IN")}</b>
+                  <span>product categories</span>
+                </div>
+              )}
+              {priceYear && (
+                <div className="hero-stat">
+                  <b>{priceYear}</b>
+                  <span>catalogue year</span>
+                </div>
+              )}
             </div>
           </div>
-        )}
+
+          <div className="hero-visual-wrap">
+            <div className="hero-visual" data-rtc-component="hero_visual">
+              <Image
+                src="/showcase/redthunder_hero_crackers_1791297525760.jpg"
+                alt="RedThunder crackers collection for festive celebrations"
+                fill
+                priority
+                sizes="(min-width:1024px) 46vw, 100vw"
+                quality={88}
+                className="hero-visual-image"
+              />
+              <div className="hero-visual-shade" aria-hidden="true" />
+              {logo && (
+                <div className="hero-brand-mark">
+                  <Image src={logo} alt={`${name} logo`} width={140} height={56} className="h-10 w-auto max-w-32 object-contain sm:h-12" />
+                </div>
+              )}
+              <div className="hero-image-caption">
+                <span className="hero-caption-label">Explore the range</span>
+                <strong>Find your celebration favourites.</strong>
+                {settings["site.factory_name"] && <span className="hero-caption-factory">{settings["site.factory_name"]}</span>}
+              </div>
+            </div>
+            <div className="hero-visual-footnote">
+              <span className="hero-footnote-mark" aria-hidden="true">✦</span>
+              <span>{place || "Official company catalogue"}</span>
+              <a href="#company-details">Company details <span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

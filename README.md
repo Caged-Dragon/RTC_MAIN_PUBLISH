@@ -1,44 +1,79 @@
-# RT Crackers Company Portfolio
+# RT Crackers Website — Database-Driven Homepage
 
-Next.js portfolio/catalogue for RT Crackers, wired directly to the current production Supabase project.
+Next.js website for RT Crackers. The redesign retains the existing project architecture and reads the real catalogue and business profile from the connected Supabase project. Orders continue through the separate cart website; this site does not create a second cart or payment flow.
 
-## Current database source of truth
+## Production database remains the source of truth
 
-This website reads from:
+The website reads from the existing production tables:
 
-- `public.products` — 127 catalogue products
-- `public.company_profile` — company identity, contact details and logo
-- `public.merchant_settings` — active catalogue year, ordering and delivery settings
-- `public.offers` + `public.offer_banners` — admin-managed home banners/offers
+- `public.products` — active products, identifiers, product codes, pack details, prices and images
+- `public.product_categories` — active category names, slugs, descriptions and images
+- `public.company_profile` — company identity, registered name, brand description, aim, vision, mission, contact channels, address, optional registration identifiers, business hours, policies and social links
+- `public.merchant_settings` — factory identity/address, catalogue year, booking state, minimum order value and dispatch policy
+- `public.offers` + `public.offer_banners` — active offer artwork, headline/subheadline and optional mobile artwork/link
+- `public.theme_page_settings` + `public.theme_component_settings` — database-managed site theme, where configured
 
-It does not require the older portfolio CMS tables.
+No demo catalogue or invented sale prices are added. The catalogue page loads active product records (up to 1,000 in a request; the current production catalogue is smaller), uses the real database product IDs, and filters/sorts those records in the browser.
+
+## What changed
+
+- Kept the original wide offer banner above the header. Banner artwork and text still come from active database offer records; a mobile creative is used when one exists.
+- Refreshed the main hero while continuing to display the live company name, promotional copy, location and catalogue counts.
+- Added category artwork/cards using real category records and available category images.
+- Added product search, category filtering, price sorting, budget filters and progressive “load more” for the real catalogue.
+- Product cards use the current database prices and only show MRP when the database MRP is greater than the selling price.
+- Expanded the company/contact area and footer to show populated legal/factory names, parent business and brand, company description, aim, vision, mission, established claim, registered/factory address, city/district/state/postcode/country, all available phones/emails, WhatsApp, website, map and social links. Registration identifiers, custom contacts and business hours appear only when populated in the database.
+- Preserved the existing cart URL and WhatsApp number resolution; product order links continue to the current cart domain because no verified product-specific cart deep-link interface is defined in this project.
+- Retained the current safety, shipping, ordering notes, SEO metadata, database theme and reduced-motion preferences.
 
 ## Environment
 
+Copy `.env.example` to `.env.local` and supply the existing project's values. Use only the Supabase publishable key (or legacy anon key if that is what the project is configured to use). **Never put a Supabase service-role/secret key in a `NEXT_PUBLIC_` variable or frontend source code.**
+
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://ypmiinmkyvzdpakbkers.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 NEXT_PUBLIC_SITE_URL=https://rtcrackers.com
 CMS_REVALIDATE_SECONDS=60
 ```
 
-## Vercel
-
-- Framework: Next.js
-- Root directory: this project folder
-- Build command: `npm run build`
-- Output: Next.js default
-- Add the environment variables above.
-
-## Behaviour
-
-The catalogue is read-only from the website. Product names, prices, categories and images come from the database. Home banners are read from active `offer_banners` linked to active `offers`. If no banner exists, the portfolio still renders its normal hero.
-
-The ordering CTA points to the customer cart site.
+Do not commit `.env.local`.
 
 ## Run locally
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
+
+Build for production with:
+
+```bash
+npm run build
+npm run start
+```
+
+## Vercel deployment
+
+- Framework: Next.js
+- Root directory: project root
+- Build command: `npm run build`
+- Output: Next.js default
+- Configure the four environment variables above in the appropriate deployment environment.
+
+## Integration notes
+
+- The cart CTA is `https://cart.rtcrackers.com` in `src/lib/utils.ts`.
+- Database reads and active-offer filtering are in `src/lib/cms.ts`.
+- The banner remains optional: if there is no active database banner, the banner section is omitted rather than replaced by a fake offer.
+- The page remains read-only with respect to the database. It does not change pricing, stock, catalogue records or booking settings.
+
+
+## Validation and limitations for this handoff
+
+- Read-only Supabase schema/data checks confirmed 127 active products, 18 active categories and 1 currently active offer banner at the time this source was prepared. No database records were changed.
+- TypeScript/TSX transpile syntax check: 16 source files, 0 syntax diagnostics.
+- CSS parser check: 0 top-level parser errors.
+- `git diff --check`: passed.
+- A full Next.js production build was **not verified** in this environment because dependency installation could not complete: the npm registry DNS/network connection was unavailable, leaving `node_modules/.bin/next` missing. Run `npm ci` and `npm run build` in the deployment environment before promoting to production.
+- This package contains source changes only; the live website has not been deployed or modified by this handoff.

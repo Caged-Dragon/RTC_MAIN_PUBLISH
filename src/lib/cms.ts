@@ -40,10 +40,28 @@ export type Theme = {
 export type Banner = {
   title: string;
   subtitle: string | null;
+  alt_text: string | null;
   image_url: string;
+  mobile_image_url: string | null;
   link_url: string | null;
   position: string;
   display_order: number;
+};
+export type ComboPack = {
+  id: string;
+  combo_code: string;
+  name: string;
+  short_title: string | null;
+  slug: string;
+  description: string | null;
+  tagline: string | null;
+  image_url: string | null;
+  budget_tier: string | null;
+  pricing_mode: string;
+  manual_price: number | null;
+  current_price: number;
+  item_count: number;
+  badge_text: string | null;
 };
 export type Category = {
   category_id: string;
@@ -55,7 +73,9 @@ export type Category = {
   alt_text?: string | null;
 };
 export type Product = {
-  product_id: number;
+  /** Stable primary key from the production database, not a generated list index. */
+  product_id: string;
+  product_code: string | null;
   product_name: string;
   selling_price: number;
   mrp: number;
@@ -99,7 +119,7 @@ const asText = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 export const getCompany = cache(async () => {
   return run(
     sb.from("company_profile")
-      .select("company_name,legal_name,tagline,description,vision,aim,mission,logo_url,favicon_url,website_url,email,support_email,mobile,alternate_mobile,whatsapp_number,landline,physical_address,address_line_2,landmark,city,district,state,postal_code,country,google_maps_url,social_links,policies,seo_details,is_active")
+      .select("company_name,legal_name,tagline,description,vision,aim,mission,logo_url,favicon_url,website_url,email,support_email,mobile,alternate_mobile,whatsapp_number,landline,physical_address,address_line_2,landmark,city,district,state,postal_code,country,google_maps_url,gst_number,pan_number,business_registration_number,established_year,social_links,contact_details,business_hours,policies,seo_details,extra_details,is_active")
       .eq("is_active", true)
       .order("created_at", { ascending: true })
       .limit(1)
@@ -118,7 +138,7 @@ export const getMerchant = cache(async () => {
   );
 });
 
-export const getProducts = cache(async (limit = 20): Promise<Product[]> => {
+export const getProducts = cache(async (limit = 200): Promise<Product[]> => {
   const merchant = await getMerchant();
   const year = Number(merchant?.active_catalog_year) || new Date().getFullYear();
 
@@ -128,7 +148,7 @@ export const getProducts = cache(async (limit = 20): Promise<Product[]> => {
       .eq("is_active", true)
       .order("s_no", { ascending: true })
       .order("product_code", { ascending: true })
-      .limit(Math.max(1, Math.min(limit, 50))),
+      .limit(Math.max(1, Math.min(limit, 1000))),
     [] as any[]
   );
 
@@ -136,11 +156,12 @@ export const getProducts = cache(async (limit = 20): Promise<Product[]> => {
     const relation = Array.isArray(p.product_categories) ? p.product_categories[0] : p.product_categories;
     const categoryName = asText(relation?.category_name) || asText(p.category) || "Products";
     return {
-      product_id: index + 1,
+      product_id: (p.id == null ? "" : String(p.id).trim()) || asText(p.product_code) || `product-${index + 1}`,
+      product_code: asText(p.product_code) || null,
       product_name: asText(p.name) || `Product ${p.product_code ?? index + 1}`,
       selling_price: Number(p.rate) || 0,
       mrp: Number(p.mrp_rate ?? p.rate) || 0,
-      category_id: relation?.category_id ?? p.category_id ?? 0,
+      category_id: String(relation?.category_id ?? p.category_id ?? ""),
       category_name: categoryName,
       category_slug: asText(relation?.slug) || slugify(categoryName),
       pack_type_name: asText(p.pack_type) || null,
@@ -149,7 +170,6 @@ export const getProducts = cache(async (limit = 20): Promise<Product[]> => {
       alt_text: asText(p.name) || null,
       is_bestseller: Boolean(p.is_bestseller),
       is_featured: Boolean(p.is_featured),
-          ...(p.id ? { db_id: p.id } : {}),
     } as Product;
   });
 });
@@ -188,7 +208,7 @@ export const getBanners = cache(async (): Promise<Banner[]> => {
   const now = Date.now();
   const rows = await run(
     sb.from("offer_banners")
-      .select("image_url,mobile_image_url,headline,subheadline,button_text,button_url,display_order,is_active,starts_at,ends_at,offer_id,offers!inner(title,short_title,is_active,starts_at,ends_at)")
+      .select("image_url,mobile_image_url,alt_text,headline,subheadline,button_text,button_url,display_order,is_active,starts_at,ends_at,offer_id,offers!inner(title,short_title,is_active,starts_at,ends_at)")
       .eq("is_active", true)
       .eq("offers.is_active", true)
       .order("display_order", { ascending: true }),
@@ -208,11 +228,50 @@ export const getBanners = cache(async (): Promise<Banner[]> => {
     .map((r) => ({
       title: asText(r.headline) || asText(r.offers?.short_title) || asText(r.offers?.title) || "RT Crackers Offers",
       subtitle: asText(r.subheadline) || null,
+      alt_text: asText(r.alt_text) || asText(r.headline) || asText(r.offers?.short_title) || asText(r.offers?.title) || "RT Crackers Offers",
       image_url: asText(r.image_url),
-      link_url: asText(r.button_url) || "#catalogue",
+      mobile_image_url: asText(r.mobile_image_url) || null,
+      link_url: asText(r.button_url) || null,
       position: "H",
       display_order: Number(r.display_order) || 0,
     }));
+});
+
+export const getComboPacks = cache(async (): Promise<ComboPack[]> => {
+  const rows = await run(
+    sb.from("combo_packs")
+      .select("id,combo_code,name,short_title,slug,description,tagline,image_url,budget_tier,pricing_mode,manual_price,badge_text,display_order,combo_pack_items(quantity,products!combo_pack_items_product_id_fkey(rate,is_active))")
+      .eq("website_key", "cart")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true }),
+    [] as any[]
+  );
+
+  return rows.map((row) => {
+    const items = Array.isArray(row.combo_pack_items) ? row.combo_pack_items : [];
+    const liveSum = items.reduce((total: number, item: any) => {
+      const related = Array.isArray(item.products) ? item.products[0] : item.products;
+      return total + (related?.is_active === false ? 0 : Number(related?.rate ?? 0)) * Math.max(1, Number(item.quantity ?? 1));
+    }, 0);
+    const manualPrice = row.manual_price == null ? null : Number(row.manual_price);
+    const isManual = String(row.pricing_mode ?? "LIVE_SUM").toUpperCase() === "MANUAL";
+    return {
+      id: String(row.id ?? ""),
+      combo_code: asText(row.combo_code),
+      name: asText(row.name) || asText(row.short_title) || "Combo pack",
+      short_title: asText(row.short_title) || null,
+      slug: asText(row.slug),
+      description: asText(row.description) || null,
+      tagline: asText(row.tagline) || null,
+      image_url: asText(row.image_url) || null,
+      budget_tier: asText(row.budget_tier) || null,
+      pricing_mode: isManual ? "MANUAL" : "LIVE_SUM",
+      manual_price: manualPrice,
+      current_price: isManual ? (manualPrice ?? 0) : liveSum,
+      item_count: items.length,
+      badge_text: asText(row.badge_text) || null,
+    } as ComboPack;
+  }).filter((combo) => combo.id && combo.current_price > 0 && combo.item_count > 0);
 });
 
 export const getSettings = cache(async (): Promise<Settings> => {
@@ -227,8 +286,11 @@ export const getSettings = cache(async (): Promise<Settings> => {
   const policies = asObject(company?.policies);
   const seo = asObject(company?.seo_details);
   const social = asObject(company?.social_links);
+  const contacts = asObject(company?.contact_details);
+  const businessHours = asObject(company?.business_hours);
+  const extra = asObject(company?.extra_details);
 
-  const phone = asText(company?.whatsapp_number) || asText(company?.mobile) || asText(merchant?.whatsapp_booking_number) || "8124100501";
+  const phone = asText(company?.whatsapp_number) || asText(company?.mobile) || asText(merchant?.whatsapp_booking_number);
   const address = [
     asText(company?.physical_address),
     asText(company?.address_line_2),
@@ -236,26 +298,59 @@ export const getSettings = cache(async (): Promise<Settings> => {
   ].filter(Boolean).join(", ");
 
   const out: Settings = {};
+  // Keep the live database as the source of truth. Expose the company-profile
+  // and merchant fields to the UI without inventing replacement business details.
   out["site.name"] = asText(company?.company_name) || asText(merchant?.factory_name) || "REDTHUNDER CRACKERS";
+  out["site.legal_name"] = asText(company?.legal_name);
+  out["site.factory_name"] = asText(merchant?.factory_name);
   out["site.tagline"] = asText(company?.tagline);
   out["site.description"] = asText(company?.description);
+  out["site.aim"] = asText(company?.aim);
+  out["site.vision"] = asText(company?.vision);
+  out["site.mission"] = asText(company?.mission);
+  out["site.brand_name"] = asText(extra.brand);
+  out["site.parent_business"] = asText(extra.parent_business);
+  out["site.established_claim"] = asText(extra.established_claim) || (company?.established_year ? String(company.established_year) : "");
+  out["site.why_choose_us"] = JSON.stringify(Array.isArray(extra.why_choose_us) ? extra.why_choose_us.filter((v: unknown) => typeof v === "string" && v.trim()) : []);
   out["site.domain"] = "rtcrackers.com";
   out["site.logo_url"] = asText(company?.logo_url);
   out["site.favicon_url"] = asText(company?.favicon_url) || asText(company?.logo_url);
   out["site.phone"] = phone;
+  out["site.whatsapp_number"] = phone;
+  out["site.mobile"] = asText(company?.mobile);
+  out["site.alternate_mobile"] = asText(company?.alternate_mobile);
+  out["site.landline"] = asText(company?.landline);
   out["site.phone_country_code"] = "91";
-  out["site.address"] = address || asText(merchant?.factory_godown_address) || "D No. 4/2017/A, Pothigai Nagar, Kila Thiruthangal";
-  out["site.city"] = asText(company?.city) || "Sivakasi";
-  out["site.state"] = asText(company?.state) || "Tamil Nadu";
-  out["site.postal_code"] = asText(company?.postal_code) || asText(merchant?.pincode) || "626189";
+  out["site.address"] = address || asText(merchant?.factory_godown_address);
+  out["site.address_line_2"] = asText(company?.address_line_2);
+  out["site.landmark"] = asText(company?.landmark);
+  out["site.factory_address"] = asText(merchant?.factory_godown_address);
+  out["site.city"] = asText(company?.city);
+  out["site.district"] = asText(company?.district);
+  out["site.state"] = asText(company?.state);
+  out["site.postal_code"] = asText(company?.postal_code) || asText(merchant?.pincode);
+  out["site.factory_pincode"] = asText(merchant?.pincode);
+  out["site.country"] = asText(company?.country);
   out["site.sales_email"] = asText(company?.email);
   out["site.support_email"] = asText(company?.support_email);
-  out["site.support_phone"] = asText(company?.alternate_mobile) || asText(company?.mobile) || asText(merchant?.support_phone);
+  out["site.support_phone"] = asText(merchant?.support_phone) || asText(company?.alternate_mobile) || asText(company?.mobile);
+  out["site.website_url"] = asText(company?.website_url);
+  out["site.maps_url"] = asText(company?.google_maps_url);
+  out["site.gst_number"] = asText(company?.gst_number);
+  out["site.pan_number"] = asText(company?.pan_number);
+  out["site.business_registration_number"] = asText(company?.business_registration_number);
+  out["site.business_hours"] = JSON.stringify(businessHours);
+  out["site.contact_details"] = JSON.stringify(contacts);
   out["site.ordering_url"] = phone ? `https://wa.me/91${phone.replace(/\D/g, "").replace(/^91/, "")}` : "";
   out["site.cart_url"] = CART_URL;
   out["site.banner_url"] = banners[0]?.image_url ?? "";
-  out["site.banner_alt"] = banners[0]?.title ?? "RT Crackers offer banner";
-  out["site.banner_ratio"] = "16 / 5";
+  out["site.banner_mobile_url"] = banners[0]?.mobile_image_url ?? "";
+  out["site.banner_alt"] = banners[0]?.alt_text ?? banners[0]?.title ?? "RT Crackers offer banner";
+  out["site.banner_link_url"] = banners[0]?.link_url ?? "";
+  out["site.social_links"] = JSON.stringify(social);
+  out["merchant.minimum_order_value"] = merchant?.minimum_order_value == null ? "" : String(merchant.minimum_order_value);
+  out["merchant.season_booking_open"] = merchant?.is_season_booking_open == null ? "" : String(merchant.is_season_booking_open);
+  out["merchant.dispatch_policy"] = asText(merchant?.dispatch_policy_text);
   out["seo.title"] = asText(seo.title) || `${out["site.name"]} | Fireworks & Crackers`;
   out["seo.description"] = asText(seo.description) || asText(company?.description) || "RT Crackers — quality fireworks and crackers from Sivakasi.";
   out["seo.canonical_base"] = asText(company?.website_url) || "https://rtcrackers.com";

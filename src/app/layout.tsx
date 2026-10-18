@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import TopBanner from "@/components/TopBanner";
+import ScrollMotion from "@/components/ScrollMotion";
 import Header from "@/components/Header";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import Footer from "@/components/Footer";
 import { getSettings, getTheme, themeCss } from "@/lib/cms";
 import { fontHref } from "@/lib/utils";
@@ -25,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = { themeColor: "#D71920", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#111827", width: "device-width", initialScale: 1 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const [s, theme] = await Promise.all([getSettings(), getTheme()]);
@@ -40,10 +41,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body className="min-h-screen antialiased">
         <span id="top" aria-hidden="true" />
-        <TopBanner url={s["site.banner_url"]} alt={s["site.banner_alt"]} ratio={s["site.banner_ratio"]} />
         <Header />
         <main>{children}</main>
         <Footer />
+        <MobileBottomNav />
+        <ScrollMotion />
       </body>
     </html>
   );
