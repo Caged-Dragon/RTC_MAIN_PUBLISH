@@ -1,6 +1,6 @@
 # RT Crackers Website — Database-Driven Homepage
 
-Next.js website for RT Crackers. The redesign retains the existing project architecture and reads the real catalogue and business profile from the connected Supabase project. Orders continue through the separate cart website; this site does not create a second cart or payment flow.
+Next.js website for RT Crackers. It retains the existing project architecture and reads the live catalogue and business profile from the connected Supabase project. The global header is followed by a responsive shopping hero and an image-aware CMS offer banner. Orders continue through the separate cart website; this site does not create a second cart or payment flow.
 
 ## Production database remains the source of truth
 
@@ -13,11 +13,11 @@ The website reads from the existing production tables:
 - `public.offers` + `public.offer_banners` — active offer artwork, headline/subheadline and optional mobile artwork/link
 - `public.theme_page_settings` + `public.theme_component_settings` — database-managed site theme, where configured
 
-No demo catalogue or invented sale prices are added. The catalogue page loads active product records (up to 1,000 in a request; the current production catalogue is smaller), uses the real database product IDs, and filters/sorts those records in the browser.
+No demo catalogue or invented sale prices are added. The homepage loads up to 500 active product records per request, uses the real database product IDs, and filters/sorts those records in the browser.
 
 ## What changed
 
-- Kept the original wide offer banner above the header. Banner artwork and text still come from active database offer records; a mobile creative is used when one exists.
+- Places the responsive hero and active database offer banner directly after the global header. A mobile creative is used when one exists, and the banner frame follows the selected artwork dimensions.
 - Refreshed the main hero while continuing to display the live company name, promotional copy, location and catalogue counts.
 - Added category artwork/cards using real category records and available category images.
 - Added product search, category filtering, price sorting, budget filters and progressive “load more” for the real catalogue.
@@ -71,9 +71,8 @@ npm run start
 
 ## Validation and limitations for this handoff
 
-- Read-only Supabase schema/data checks confirmed 127 active products, 18 active categories and 1 currently active offer banner at the time this source was prepared. No database records were changed.
-- TypeScript/TSX transpile syntax check: 16 source files, 0 syntax diagnostics.
-- CSS parser check: 0 top-level parser errors.
-- `git diff --check`: passed.
-- A full Next.js production build was **not verified** in this environment because dependency installation could not complete: the npm registry DNS/network connection was unavailable, leaving `node_modules/.bin/next` missing. Run `npm ci` and `npm run build` in the deployment environment before promoting to production.
-- This package contains source changes only; the live website has not been deployed or modified by this handoff.
+- The latest responsive/accessibility/SEO fixes are described in [`IMPLEMENTATION-AUDIT.md`](./IMPLEMENTATION-AUDIT.md).
+- TypeScript/TSX syntax transpilation: 22 source files, 0 syntax diagnostics.
+- CSS parser check (`tinycss2`): 1,096 rules visited recursively, 0 parse errors; CSS brace balance is 0.
+- A full TypeScript type-check and Next.js production build were **not verified** in this environment because `npm ci` stalled while retrieving dependencies. Run `npm ci` and `npm run build` in CI or another network-enabled environment before deployment.
+- This package contains source changes only; the live website has not been deployed or modified by this handoff. No Supabase rows, prices, stock, bookings, or orders were changed.

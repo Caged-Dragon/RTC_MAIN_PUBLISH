@@ -114,8 +114,9 @@ export default async function Home() {
       <section className="trust-strip" aria-label="Company and service highlights">
         <div className="trust-strip-inner mx-auto grid max-w-7xl grid-cols-2 gap-3 px-4 py-4 sm:grid-cols-4 lg:px-6">
           <div className="trust-strip-item"><span aria-hidden="true">✦</span><div><strong>Explore the collection</strong><small>{s["site.name"] || "RT Crackers"}</small></div></div>
-          <div className="trust-strip-item"><span aria-hidden="true">⌖</span><div><strong>{trustLocation || "Sivakasi, Tamil Nadu"}</strong><small>Our business location</small></div></div>
+          <div className="trust-strip-item"><span aria-hidden="true">⌖</span><div><strong>{trustLocation || "Sivakasi, Tamil Nadu"}</strong><small>Business location</small></div></div>
           <div className="trust-strip-item"><span aria-hidden="true">▦</span><div><strong>{products.length.toLocaleString("en-IN")} products</strong><small>{categories.length.toLocaleString("en-IN")} categories to browse</small></div></div>
+          {Number.isFinite(Number(s["merchant.minimum_order_value"])) && Number(s["merchant.minimum_order_value"]) > 0 && <div className="trust-strip-item"><span aria-hidden="true">₹</span><div><strong>{inr(Number(s["merchant.minimum_order_value"]))} minimum order</strong><small>Order threshold</small></div></div>}
           <div className="trust-strip-item">{s["site.ordering_url"] ? <a href={s["site.ordering_url"]} target="_blank" rel="noopener noreferrer" aria-label="Get customer support on WhatsApp"><span aria-hidden="true">◉</span><div><strong>WhatsApp support</strong><small>{s["site.whatsapp_number"] || s["site.support_phone"] || "Contact the team"}</small></div></a> : <div><span aria-hidden="true">◉</span><div><strong>Customer support</strong><small>{s["site.support_phone"] || s["site.sales_email"] || "Contact details below"}</small></div></div>}</div>
         </div>
       </section>
