@@ -48,7 +48,7 @@ export default function Hero({ settings, productCount, categoryCount, priceYear 
 
             <div className="hero-actions mt-7 flex flex-wrap gap-3">
               <a href="#catalogue" className="brand-button px-5 py-3.5 text-base sm:px-6">
-                Shop now <span aria-hidden="true">→</span>
+                Browse catalogue <span aria-hidden="true">→</span>
               </a>
               <a href="#categories" className="ghost-button px-5 py-3.5 text-base sm:px-6">
                 Browse categories

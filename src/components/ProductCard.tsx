@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { Product } from "@/lib/cms";
-import { inr, CART_URL } from "@/lib/utils";
+import { inr, cartHandoffUrl } from "@/lib/utils";
 
 const CATEGORY_IMAGES: Array<[string, string]> = [
   ["SPARKLER", "/showcase/redthunder_sparklers_1791297554442.jpg"],
@@ -31,7 +31,7 @@ export default function ProductCard({ p }: { p: Product }) {
       <div className="product-image relative aspect-square overflow-hidden">
         <Image
           src={image}
-          alt={p.image_url ? (p.alt_text ?? p.product_name) : `${p.category_name} category image`}
+          alt={p.image_url ? `${p.alt_text ?? p.product_name} – Makka & Wheat brand crackers from Sivakasi` : `${p.category_name} Sivakasi crackers category image – Makka & Wheat brand`}
           fill
           sizes="(min-width:1280px) 23vw,(min-width:1024px) 25vw,(min-width:640px) 33vw,50vw"
           className={`product-img object-contain${p.image_url ? " p-3 sm:p-4" : " product-fallback-img"}`}
@@ -52,14 +52,15 @@ export default function ProductCard({ p }: { p: Product }) {
           </div>
           {p.pack_type_name && <p className="product-pack mt-1">{p.pack_type_name}</p>}
           <a
-            href={CART_URL}
+            href={cartHandoffUrl({ query: p.product_name })}
             target="_blank"
             rel="noopener noreferrer"
             className="product-order-link mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-extrabold"
-            aria-label={`Continue to the ordering cart to order ${p.product_name}`}
+            aria-label={`View catalogue details for ${p.product_name}`}
           >
-            Open ordering cart <span aria-hidden="true">↗</span>
+            View product details <span aria-hidden="true">↗</span>
           </a>
+          <p className="product-minimum-note">For requested Sivakasi godown dispatch, the stated ₹3,000 minimum applies to permitted offline fulfilment; confirm details with sales.</p>
         </div>
       </div>
     </article>

@@ -3044,3 +3044,26 @@ html[data-scroll-animations="ready"] .horizontal-rail > .scroll-motion { transit
   .top-banner-pager,
   .top-banner-cta { transition: none !important; }
 }
+
+
+/* Business-critical dispatch notice: visible across every showcase section. */
+.minimum-order-notice { position: sticky; top: 0; z-index: 70; display: flex; align-items: center; justify-content: center; gap: .55rem; min-height: 40px; padding: .4rem clamp(.5rem, 2vw, 1rem); background: #7f1218; color: #fff; text-align: center; font-size: clamp(.68rem, 1vw, .82rem); line-height: 1.25; box-shadow: 0 2px 10px rgba(24, 9, 9, .18); }
+.minimum-order-notice p { min-width: 0; margin: 0; }
+.minimum-order-notice strong { font-weight: 950; }
+.minimum-order-notice a { flex: 0 0 auto; min-height: 32px; display: inline-flex; align-items: center; padding: .25rem .65rem; border: 1px solid rgba(255,255,255,.42); border-radius: 999px; color: white; font-weight: 850; text-decoration: none; }
+.minimum-order-notice a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.site-header { top: 40px !important; }
+.product-minimum-note { margin-top: .55rem; color: #7f1218; font-size: .69rem; line-height: 1.4; font-weight: 800; }
+@media (max-width: 640px) { .minimum-order-notice { min-height: 42px; justify-content: flex-start; gap: .35rem; padding-inline: .5rem; text-align: left; font-size: .68rem; } .minimum-order-notice p span { display: none; } .minimum-order-notice a { margin-left: auto; min-height: 32px; padding-inline: .45rem; font-size: .68rem; white-space: nowrap; } .site-header { top: 42px !important; } }
+@media (max-width: 350px) { .minimum-order-notice { font-size: .62rem; } .minimum-order-notice a { font-size: .61rem; } }
+
+
+/* Fluid layout and 44px touch targets for smaller phones through wide desktop screens. */
+html, body { max-width: 100%; overflow-x: clip; }
+img, video, svg { max-width: 100%; }
+button, input, select, textarea, .brand-button, .product-order-link, .combo-card-link { min-height: 44px; }
+.product-card, .combo-card, .moving-showcase-card, .moving-category-card { min-width: 0; }
+.section-title { font-size: clamp(1.55rem, 3.5vw, 2.6rem); }
+.minimum-order-notice { gap: clamp(.35rem, 1.5vw, .85rem); padding-inline: clamp(.5rem, 2vw, 1.25rem); }
+.minimum-order-notice p { font-size: clamp(.72rem, 1vw, .9rem); }
+@media (max-width: 380px) { .minimum-order-notice { align-items: flex-start; } .minimum-order-notice p { line-height: 1.25; } .product-card-body { padding: .75rem; } }

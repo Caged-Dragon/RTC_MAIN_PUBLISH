@@ -74,9 +74,34 @@ export default async function Home() {
   const [sections, categories, products, s, combos, banners] = await Promise.all([getSections(), getCategories(), getProducts(500), getSettings(), getComboPacks(), getBanners()]);
   const by = (page: number, key: string) => sections.find((x) => x.page_id === page && x.key === key);
   const about = by(1, "about_us")?.content ?? {};
-  const shipping = sections.filter((x) => x.page_id === 2);
+  const shipping = sections.filter((x) => x.page_id === 2).map((section, index) => {
+    const conflictsWithCurrentRules = (value: unknown) => typeof value === "string" && (
+      /(advance payment|payment received before|pay(?:ment)? before dispatch|payment must be made before|upi|bank transfer|online payment|digital payment)/i.test(value)
+      || (/(cancel|return|refund)/i.test(value) && !/(no cancellations? or returns?|not permitted|not accepted|not allowed)/i.test(value))
+      || /minimum order.{0,20}(?:₹?\s?2,?000|rs\.?\s?2,?000)/i.test(value)
+    );
+    const content = { ...section.content };
+    if (conflictsWithCurrentRules(content.body)) content.body = "This website is catalogue-only and does not accept online fireworks orders or payments. For any permitted offline transaction, clarify product availability, transport and payment terms directly with the licensed business.";
+    if (Array.isArray(content.policies)) content.policies = content.policies.filter((value: unknown) => !conflictsWithCurrentRules(value));
+    if (index === 0) content.policies = [
+      ...(Array.isArray(content.policies) ? content.policies : []),
+      "The stated minimum value for requested Sivakasi godown dispatch is ₹3,000 for permitted offline fulfilment.",
+      "For permitted offline transactions only, the business states COD terms apply where agreed directly; this website has no online checkout.",
+      "Contact the licensed business directly to discuss stock, location, transport and any fulfilment permitted by current law."
+    ];
+    return { ...section, content };
+  });
   const terms = by(3, "buying_terms")?.content ?? {};
   const safety = by(4, "confirmation_cancellation")?.content ?? {};
+  const rawTermItems = ((terms.shipping_rules ?? terms.policies ?? []) as unknown[]).filter((value): value is string => typeof value === "string");
+  // The current COD / ₹3,000 / strict post-dispatch policy takes precedence over legacy CMS text.
+  const compatibleTermItems = rawTermItems.filter((item) => !/(cancel|return|refund|online payment|digital payment|payment received|minimum order|₹?\s?2,?000|rs\.?\s?2,?000)/i.test(item));
+  const coreTermItems = [
+    "The stated minimum value for requested Sivakasi godown dispatch is ₹3,000 for permitted offline fulfilment.",
+    "For permitted offline transactions, the business states COD terms apply where agreed directly; this is not an online checkout.",
+    "Contact +91 8124100501 for product information and to discuss any permitted offline fulfilment directly.",
+    "Once the order is verified and dispatched from the Sivakasi godown, cancellations and returns are not permitted."
+  ];
   const databaseHighlights = parseStringArray(s["site.why_choose_us"]);
   const highlights: string[] = Array.isArray(about.highlights)
     ? about.highlights.filter((item: unknown): item is string => typeof item === "string" && item.trim().length > 0)
@@ -116,7 +141,7 @@ export default async function Home() {
           <div className="trust-strip-item"><span aria-hidden="true">✦</span><div><strong>Explore the collection</strong><small>{s["site.name"] || "RT Crackers"}</small></div></div>
           <div className="trust-strip-item"><span aria-hidden="true">⌖</span><div><strong>{trustLocation || "Sivakasi, Tamil Nadu"}</strong><small>Business location</small></div></div>
           <div className="trust-strip-item"><span aria-hidden="true">▦</span><div><strong>{products.length.toLocaleString("en-IN")} products</strong><small>{categories.length.toLocaleString("en-IN")} categories to browse</small></div></div>
-          {Number.isFinite(Number(s["merchant.minimum_order_value"])) && Number(s["merchant.minimum_order_value"]) > 0 && <div className="trust-strip-item"><span aria-hidden="true">₹</span><div><strong>{inr(Number(s["merchant.minimum_order_value"]))} minimum order</strong><small>Order threshold</small></div></div>}
+          <div className="trust-strip-item"><span aria-hidden="true">₹</span><div><strong>{inr(3000)} stated minimum</strong><small>For requested godown dispatch via permitted offline fulfilment</small></div></div>
           <div className="trust-strip-item">{s["site.ordering_url"] ? <a href={s["site.ordering_url"]} target="_blank" rel="noopener noreferrer" aria-label="Get customer support on WhatsApp"><span aria-hidden="true">◉</span><div><strong>WhatsApp support</strong><small>{s["site.whatsapp_number"] || s["site.support_phone"] || "Contact the team"}</small></div></a> : <div><span aria-hidden="true">◉</span><div><strong>Customer support</strong><small>{s["site.support_phone"] || s["site.sales_email"] || "Contact details below"}</small></div></div>}</div>
         </div>
       </section>
@@ -207,31 +232,30 @@ export default async function Home() {
               <div data-rtc-component="policy_card" className="reveal surface-card rounded-2xl p-7">
                 <h3 className="text-2xl font-bold">Order verification & no-return policy</h3>
                 <ul className="mt-5 space-y-4 text-[var(--muted)]">
-                  {(safety.policies ?? []).map((x: string, i: number) => (
+                  {["This website does not accept online fireworks orders or payments.", "Contact the sales team for product information and any permitted offline fulfilment discussions.", "The business states that no cancellations or returns are permitted once an offline order is verified and dispatched."].map((x: string, i: number) => (
                     <li key={x} className="flex gap-3"><span className="accent-text">{String(i + 1).padStart(2, "0")}</span><span>{x}</span></li>
                   ))}
                 </ul>
               </div>
               <div className="reveal surface-card rounded-2xl p-7">
-                <h3 className="text-2xl font-bold">Payment & ordering</h3>
-                {terms.payment_policy && <p className="mt-4 leading-7 text-[var(--muted)]">{terms.payment_policy}</p>}
-                {terms.payment_dispatch_policy && <p className="mt-4 leading-7 text-[var(--muted)]">{terms.payment_dispatch_policy}</p>}
-                <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="brand-button mt-6 px-5 py-3"><CartIcon />Go to Cart</a>
+                <h3 className="text-2xl font-bold">Sales enquiries & business terms</h3>
+                <p className="mt-4 leading-7 text-[var(--muted)]">This website is a catalogue and does not accept online fireworks orders or payments. For a transaction that is lawful and arranged offline, confirm payment terms directly with the licensed sales team.</p>
+                <p className="mt-3 leading-7 text-[var(--muted)]">Call or WhatsApp +91 8124100501 for general product information and to discuss any permitted offline fulfilment, delivery location and transport requirements.</p>
+                <p className="mt-3 leading-7 text-[var(--muted)]">The business states a ₹3,000 minimum for requested Sivakasi godown dispatch. For permitted offline transactions, it states no cancellations or returns are accepted once verified and dispatched.</p>
+                <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="brand-button mt-6 px-5 py-3"><CartIcon />Open Product Catalogue</a>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {((terms.shipping_rules ?? terms.policies ?? []) as string[]).length > 0 && (
-        <Section id="terms" eyebrow="Business terms" title="Important ordering notes" tone="tint">
-          <div className="grid gap-4 md:grid-cols-3">
-            {((terms.shipping_rules ?? terms.policies ?? []) as string[]).map((x) => (
-              <div key={x} data-rtc-component="terms_card" className="reveal soft-card rounded-2xl p-5"><span className="text-xl text-primary" aria-hidden="true">◆</span><p className="mt-3 text-sm leading-6">{x}</p></div>
-            ))}
-          </div>
-        </Section>
-      )}
+      <Section id="terms" eyebrow="Business terms" title="Important catalogue and business notes" tone="tint">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...coreTermItems, ...compatibleTermItems].map((x) => (
+            <div key={x} data-rtc-component="terms_card" className="reveal soft-card rounded-2xl p-5"><span className="text-xl text-primary" aria-hidden="true">◆</span><p className="mt-3 text-sm leading-6">{x}</p></div>
+          ))}
+        </div>
+      </Section>
 
       <Section id="contact" eyebrow="Official business information" title="Company & Contact Details">
         <span id="company-details" className="company-anchor" aria-hidden="true" />
@@ -313,9 +337,9 @@ export default async function Home() {
           </div>
 
           <div className="contact-order-panel reveal rounded-3xl p-6 text-white sm:p-8">
-            <p className="text-xs font-black uppercase tracking-[.2em] text-[var(--accent)]">Contact & ordering</p>
+            <p className="text-xs font-black uppercase tracking-[.2em] text-[var(--accent)]">Contact & product information</p>
             <h3 className="mt-3 text-2xl font-black sm:text-3xl">Talk to the company</h3>
-            <p className="mt-3 leading-7 text-white/70">Use the current business contact details below for sales, support and order-related questions.</p>
+            <p className="mt-3 leading-7 text-white/70">Use the current business contact details below for product information and general support questions.</p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {s["site.sales_email"] && (
@@ -359,23 +383,21 @@ export default async function Home() {
             <div className="company-detail-divider company-detail-divider-dark my-6" />
             {(s["merchant.minimum_order_value"] || s["merchant.season_booking_open"] !== "") && (
               <div className="merchant-status-row mt-5 grid gap-3 sm:grid-cols-2">
-                {s["merchant.minimum_order_value"] && (
-                  <div className="merchant-status-item"><span>Minimum order value</span><strong>{inr(Number(s["merchant.minimum_order_value"]))}</strong></div>
-                )}
+                <div className="merchant-status-item"><span>Minimum order value</span><strong>{inr(3000)}</strong></div>
                 {s["merchant.season_booking_open"] !== "" && (
-                  <div className="merchant-status-item"><span>Season booking</span><strong>{s["merchant.season_booking_open"] === "true" ? "Open" : "Closed"}</strong></div>
+                  <div className="merchant-status-item"><span>Sales availability</span><strong>Contact to confirm</strong></div>
                 )}
               </div>
             )}
 
             <div className="company-detail-divider company-detail-divider-dark my-6" />
-            <p className="text-sm font-extrabold text-white/90">Ordering workflow</p>
+            <p className="text-sm font-extrabold text-white/90">Catalogue & enquiry workflow</p>
             <ol className="mt-3 space-y-2 text-sm leading-6 text-white/70">
               <li><span className="order-step-number">01</span> Browse the catalogue and confirm the product you need.</li>
-              <li><span className="order-step-number">02</span> Continue to the existing cart site to review your order.</li>
-              <li><span className="order-step-number">03</span> Confirm availability, delivery and final terms with the business before payment.</li>
+              <li><span className="order-step-number">02</span> Open the companion catalogue to search by product name or category.</li>
+              <li><span className="order-step-number">03</span> Contact sales directly to discuss product details and lawful offline fulfilment terms.</li>
             </ol>
-            <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="brand-button mt-6 px-5 py-3.5"><CartIcon /> Open ordering cart <span aria-hidden="true">↗</span></a>
+            <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="brand-button mt-6 px-5 py-3.5"><CartIcon /> Browse product catalogue <span aria-hidden="true">↗</span></a>
           </div>
         </div>
       </Section>

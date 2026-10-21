@@ -1,5 +1,5 @@
 import type { Category, Product } from "@/lib/cms";
-import { CART_URL } from "@/lib/utils";
+import { CART_URL, cartHandoffUrl } from "@/lib/utils";
 
 const IMAGE_MAP: Array<[string, string]> = [
   ["SPARKLER", "/showcase/redthunder_sparklers_1791297554442.jpg"],
@@ -27,9 +27,9 @@ function fallbackImage(category: string) {
 function ProductTile({ product }: { product: Product }) {
   const image = product.image_url || fallbackImage(product.category_name);
   return (
-    <a className="moving-showcase-card" href={CART_URL} aria-label={`View ${product.product_name} in the cart catalogue`}>
+    <a className="moving-showcase-card" href={cartHandoffUrl({ query: product.product_name })} aria-label={`View details for ${product.product_name}`}>
       <div className="moving-showcase-image">
-        <img src={image} alt="" loading="lazy" />
+        <img src={image} alt={`${product.product_name} — ${product.category_name}, Makka & Wheat brand catalogue from Sivakasi`} loading="lazy" />
         <span className="moving-showcase-number">#{product.product_id}</span>
       </div>
       <div className="moving-showcase-body">
@@ -44,8 +44,8 @@ function ProductTile({ product }: { product: Product }) {
 function CategoryTile({ category }: { category: Category }) {
   const image = category.image_url || fallbackImage(category.category_name);
   return (
-    <a className="moving-category-card" href={CART_URL} aria-label={`Browse ${category.category_name}`}>
-      <img src={image} alt="" loading="lazy" />
+    <a className="moving-category-card" href={cartHandoffUrl({ category: category.category_name })} aria-label={`Browse ${category.category_name}`}>
+      <img src={image} alt={`${category.category_name} — RedThunder Crackers Makka & Wheat brand catalogue`} loading="lazy" />
       <div title={category.details || category.description || category.category_name}>
         <span>Explore</span>
         <strong>{category.category_name}</strong>
@@ -83,9 +83,9 @@ export default function MovingShowcase({ products, categories }: { products: Pro
           <div>
             <p className="eyebrow">Made to catch the eye</p>
             <h2 className="section-title gradient-heading">Featured crackers</h2>
-            <p className="mt-3 max-w-2xl text-[var(--muted)]">A moving preview of the catalogue. The full product selection and ordering experience live on our cart website.</p>
+            <p className="mt-3 max-w-2xl text-[var(--muted)]">A moving preview of the catalogue. The full catalogue is available on our companion site; this website does not accept online fireworks orders.</p>
           </div>
-          <a href={CART_URL} className="brand-button px-5 py-3">Browse &amp; Order</a>
+          <a href={CART_URL} className="brand-button px-5 py-3">Browse Catalogue</a>
         </div>
       </div>
 

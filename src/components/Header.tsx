@@ -9,7 +9,6 @@ const NAV = [
   { href: "#top", label: "Home" },
   { href: "#catalogue", label: "Shop all" },
   { href: "#categories", label: "Categories" },
-  { href: "#combos", label: "Combos" },
   { href: "#about", label: "About us" },
   { href: "#shipping", label: "Delivery" },
   { href: "#safety", label: "Safety" },
@@ -41,10 +40,10 @@ export default async function Header() {
           {wa && (
             <a href={wa} target="_blank" rel="noopener noreferrer" className="header-whatsapp" aria-label="Contact customer support on WhatsApp">
               <WhatsAppIcon />
-              <span className="header-action-copy"><strong>WhatsApp</strong><small>Order &amp; support</small></span>
+              <span className="header-action-copy"><strong>WhatsApp</strong><small>Product enquiries</small></span>
             </a>
           )}
-          <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="header-cart" aria-label="Open the ordering cart">
+          <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="header-cart" aria-label="Open the product catalogue">
             <CartIcon />
             <span>Cart</span>
           </a>

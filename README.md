@@ -1,78 +1,48 @@
-# RT Crackers Website — Database-Driven Homepage
+# RedThunder Showcase — `rtcrackers.com`
 
-Next.js website for RT Crackers. It retains the existing project architecture and reads the live catalogue and business profile from the connected Supabase project. The global header is followed by a responsive shopping hero and an image-aware CMS offer banner. Orders continue through the separate cart website; this site does not create a second cart or payment flow.
+The independent Next.js source tree for the public company/catalogue website. It shares the existing production Supabase project with `cart.rtcrackers.com`.
 
-## Production database remains the source of truth
+## Local development and deployment
 
-The website reads from the existing production tables:
-
-- `public.products` — active products, identifiers, product codes, pack details, prices and images
-- `public.product_categories` — active category names, slugs, descriptions and images
-- `public.company_profile` — company identity, registered name, brand description, aim, vision, mission, contact channels, address, optional registration identifiers, business hours, policies and social links
-- `public.merchant_settings` — factory identity/address, catalogue year, booking state, minimum order value and dispatch policy
-- `public.offers` + `public.offer_banners` — active offer artwork, headline/subheadline and optional mobile artwork/link
-- `public.theme_page_settings` + `public.theme_component_settings` — database-managed site theme, where configured
-
-No demo catalogue or invented sale prices are added. The homepage loads up to 500 active product records per request, uses the real database product IDs, and filters/sorts those records in the browser.
-
-## What changed
-
-- Places the responsive hero and active database offer banner directly after the global header. A mobile creative is used when one exists, and the banner frame follows the selected artwork dimensions.
-- Refreshed the main hero while continuing to display the live company name, promotional copy, location and catalogue counts.
-- Added category artwork/cards using real category records and available category images.
-- Added product search, category filtering, price sorting, budget filters and progressive “load more” for the real catalogue.
-- Product cards use the current database prices and only show MRP when the database MRP is greater than the selling price.
-- Expanded the company/contact area and footer to show populated legal/factory names, parent business and brand, company description, aim, vision, mission, established claim, registered/factory address, city/district/state/postcode/country, all available phones/emails, WhatsApp, website, map and social links. Registration identifiers, custom contacts and business hours appear only when populated in the database.
-- Preserved the existing cart URL and WhatsApp number resolution; product order links continue to the current cart domain because no verified product-specific cart deep-link interface is defined in this project.
-- Retained the current safety, shipping, ordering notes, SEO metadata, database theme and reduced-motion preferences.
-
-## Environment
-
-Copy `.env.example` to `.env.local` and supply the existing project's values. Use only the Supabase publishable key (or legacy anon key if that is what the project is configured to use). **Never put a Supabase service-role/secret key in a `NEXT_PUBLIC_` variable or frontend source code.**
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
-NEXT_PUBLIC_SITE_URL=https://rtcrackers.com
-CMS_REVALIDATE_SECONDS=60
-```
-
-Do not commit `.env.local`.
-
-## Run locally
+Requirements: Node.js 20+ and npm.
 
 ```bash
+cp .env.example .env.local
 npm ci
 npm run dev
 ```
 
-Build for production with:
+Production validation: `npm run build`, then `npm start`. Deploy this directory as its own Vercel project, attach `rtcrackers.com`, and configure the environment variables from `.env.example`.
 
-```bash
-npm run build
-npm run start
-```
+### Environment variables
 
-## Vercel deployment
+- `NEXT_PUBLIC_SUPABASE_URL` — shared Supabase project URL.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — browser/public publishable key; never use a service-role/secret key in this app.
+- `NEXT_PUBLIC_SITE_URL=https://rtcrackers.com` — canonical origin.
+- `CMS_REVALIDATE_SECONDS=60` — server-side CMS cache period.
 
-- Framework: Next.js
-- Root directory: project root
-- Build command: `npm run build`
-- Output: Next.js default
-- Configure the four environment variables above in the appropriate deployment environment.
+## Shared database integration
 
-## Integration notes
+The live catalogue is read from `products`, `product_prices`, `product_categories`, `product_pack_types`, and `product_images`. The site reads public page content and theme data from `web_pages`, `web_page_sections`, `web_seo`, `web_settings`, `web_themes`, `web_media`, and `app_sites`. The product rates shown are sourced from current `product_prices` rows; the older `rt_cart_products` table is only used for popularity/featured flags when its product name matches the normalized catalogue row.
 
-- The cart CTA is `https://cart.rtcrackers.com` in `src/lib/utils.ts`.
-- Database reads and active-offer filtering are in `src/lib/cms.ts`.
-- The banner remains optional: if there is no active database banner, the banner section is omitted rather than replaced by a fake offer.
-- The page remains read-only with respect to the database. It does not change pricing, stock, catalogue records or booking settings.
+The public catalogue is data-driven, while the public information pages receive page-specific metadata. The current database check found 127 active catalogue products, 127 current 2026 price rows, and 18 active categories. Current database price range is ₹21–₹5,000; prices may change, and rates shown are catalogue information.
 
+## SEO setup
 
-## Validation and limitations for this handoff
+- Server-generated metadata reads unique `web_seo` records, page titles/descriptions, canonicals, Open Graph and Twitter descriptions.
+- Public informational pages are generated from `web_pages` and `web_page_sections`.
+- `src/app/sitemap.ts` lists published, indexable public pages; `src/app/robots.ts` publishes the canonical sitemap URL.
+- The root layout includes Organization/LocalBusiness JSON-LD, and the catalogue includes product/category schema appropriate for catalogue content.
+- Keep headings, visible text, product names, useful alt text and internal links aligned with the per-page plan in `SEO_KEYWORD_MAP.md`.
 
-- The latest responsive/accessibility/SEO fixes are described in [`IMPLEMENTATION-AUDIT.md`](./IMPLEMENTATION-AUDIT.md).
-- TypeScript/TSX syntax transpilation: 22 source files, 0 syntax diagnostics.
-- CSS parser check (`tinycss2`): 1,096 rules visited recursively, 0 parse errors; CSS brace balance is 0.
-- A full TypeScript type-check and Next.js production build were **not verified** in this environment because `npm ci` stalled while retrieving dependencies. Run `npm ci` and `npm run build` in CI or another network-enabled environment before deployment.
-- This package contains source changes only; the live website has not been deployed or modified by this handoff. No Supabase rows, prices, stock, bookings, or orders were changed.
+SEO improvements cannot guarantee a first-place Google ranking. Submit the sitemap and monitor indexing/canonical selection/performance in Search Console after deployment.
+
+## Cross-site behavior and transaction status
+
+Product/category links open the companion catalogue at `https://cart.rtcrackers.com`; they pass a search/category hint only. Both independent deployments share the verified `hhbpyxhtksgbkaigeutl` Supabase project and use the normalized product and pricing tables. They do not add a product or submit an order. The showcase website is catalogue/enquiry-only and does not provide online fireworks checkout or payments.
+
+The official PESO circular on online fireworks sales should be reviewed with qualified counsel and the relevant licensing authority before any digital ordering flow is restored.
+
+## Database SQL files
+
+The `supabase/legacy_reference_not_for_current_schema/` folder retains older SQL only for reference. Do not apply those scripts to the live project without reconciling them against the remote schema/migration history. The SEO/page-content DML applied during this update is already live; no new tables or DDL were applied.

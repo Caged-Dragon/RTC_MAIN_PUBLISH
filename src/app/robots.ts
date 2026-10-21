@@ -1,16 +1,9 @@
 import type { MetadataRoute } from "next";
-import { getSettings } from "@/lib/cms";
-import { normalizeSiteBase } from "@/lib/utils";
 
-export const revalidate = 3600;
-
-export default async function robots(): Promise<MetadataRoute.Robots> {
-  const settings = await getSettings();
-  const base = normalizeSiteBase(settings["seo.canonical_base"]);
-  const sitemap = new URL("/sitemap.xml", base).toString();
-
+export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: "*", allow: "/" }],
-    sitemap,
+    rules: [{ userAgent: "*", allow: "/", disallow: ["/api/", "/_next/"] }],
+    sitemap: "https://rtcrackers.com/sitemap.xml",
+    host: "https://rtcrackers.com",
   };
 }

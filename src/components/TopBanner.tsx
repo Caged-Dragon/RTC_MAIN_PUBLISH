@@ -21,7 +21,7 @@ function safeLink(value: string | null | undefined): string | undefined {
 export default function TopBanner({ banners, settings }: { banners: Banner[]; settings: Settings }) {
   const slides = banners.filter((banner) => Boolean(banner.image_url));
   const [activeIndex, setActiveIndex] = useState(0);
-  const [bannerRatio, setBannerRatio] = useState("16 / 7");
+  const [bannerRatio] = useState("4 / 3");
   const [rotationPaused, setRotationPaused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
@@ -44,39 +44,8 @@ export default function TopBanner({ banners, settings }: { banners: Banner[]; se
     return () => window.clearInterval(timer);
   }, [slides.length, rotationPaused, isHovered, hasFocus]);
 
-  // Measure the exact image selected by the browser (including a mobile-specific
-  // source). The banner frame can therefore follow the artwork rather than a
-  // hard-coded aspect ratio that might crop or letterbox it at different zooms.
-  useEffect(() => {
-    let measuredImage: HTMLImageElement | null = null;
-    let cancelled = false;
-    let measurementSequence = 0;
-    const mobileQuery = window.matchMedia("(max-width: 767px)");
-
-    if (!active) return;
-
-    const measureActiveImage = () => {
-      const requestSequence = ++measurementSequence;
-      const image = new window.Image();
-      measuredImage = image;
-      image.decoding = "async";
-      image.onload = () => {
-        if (cancelled || requestSequence !== measurementSequence || !image.naturalWidth || !image.naturalHeight) return;
-        setBannerRatio(`${image.naturalWidth} / ${image.naturalHeight}`);
-      };
-      image.src = mobileQuery.matches && active.mobile_image_url
-        ? active.mobile_image_url
-        : active.image_url;
-    };
-
-    measureActiveImage();
-    mobileQuery.addEventListener("change", measureActiveImage);
-    return () => {
-      cancelled = true;
-      mobileQuery.removeEventListener("change", measureActiveImage);
-      if (measuredImage) measuredImage.onload = null;
-    };
-  }, [active?.image_url, active?.mobile_image_url]);
+  // Keep the campaign viewport fixed at 4:3. The full artwork uses object-fit: contain;
+  // the soft, blurred copy behind it fills the spare canvas without cropping the creative.
 
   if (!active) return null;
   const whatsappUrl = settings["site.ordering_url"];
@@ -159,13 +128,13 @@ export default function TopBanner({ banners, settings }: { banners: Banner[]; se
         {whatsappUrl && (
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="top-banner-cta top-banner-cta-whatsapp">
             <span className="top-banner-cta-icon"><WhatsAppIcon /></span>
-            <span className="top-banner-cta-copy"><strong>Shop on WhatsApp</strong><small>Quick help &amp; ordering</small></span>
+            <span className="top-banner-cta-copy"><strong>WhatsApp Support</strong><small>General product enquiries</small></span>
             <span className="top-banner-cta-arrow" aria-hidden="true">↗</span>
           </a>
         )}
         <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="top-banner-cta top-banner-cta-cart">
           <span className="top-banner-cta-icon"><CartIcon /></span>
-          <span className="top-banner-cta-copy"><strong>Shop on Cart</strong><small>Browse &amp; place your order</small></span>
+          <span className="top-banner-cta-copy"><strong>Browse Catalogue</strong><small>Product information &amp; current rates</small></span>
           <span className="top-banner-cta-arrow" aria-hidden="true">↗</span>
         </a>
       </div>

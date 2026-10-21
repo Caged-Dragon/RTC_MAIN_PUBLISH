@@ -88,7 +88,7 @@ export default async function Footer() {
           <h2 className="font-bold text-[var(--accent)]">Explore</h2>
           <nav aria-label="Footer navigation" className="mt-4 flex flex-col gap-3 text-sm text-white/75">
             {LINKS.map((link) => <a key={link.href} href={link.href}>{link.label}</a>)}
-            <a href={CART_URL} target="_blank" rel="noopener noreferrer">Ordering cart ↗</a>
+            <a href={CART_URL} target="_blank" rel="noopener noreferrer">Catalogue ↗</a>
           </nav>
           {socials.length > 0 && (
             <div className="mt-7">
@@ -109,7 +109,7 @@ export default async function Footer() {
             {s["site.alternate_mobile"] && <a href={`tel:${s["site.alternate_mobile"]}`}><span className="footer-detail-label">Alternate mobile</span><span className="mt-1 block">{s["site.alternate_mobile"]}</span></a>}
             {s["site.support_phone"] && <a href={`tel:${s["site.support_phone"]}`}><span className="footer-detail-label">Support / helpline</span><span className="mt-1 block">{s["site.support_phone"]}</span></a>}
             {s["site.landline"] && <a href={`tel:${s["site.landline"]}`}><span className="footer-detail-label">Landline</span><span className="mt-1 block">{s["site.landline"]}</span></a>}
-            {s["site.ordering_url"] && <a href={s["site.ordering_url"]} target="_blank" rel="noopener noreferrer"><span className="footer-detail-label">WhatsApp / orders</span><span className="mt-1 block">{s["site.whatsapp_number"] || s["site.phone"]}</span></a>}
+            {s["site.ordering_url"] && <a href={s["site.ordering_url"]} target="_blank" rel="noopener noreferrer"><span className="footer-detail-label">WhatsApp / product enquiries</span><span className="mt-1 block">{s["site.whatsapp_number"] || s["site.phone"]}</span></a>}
           </div>
         </div>
       </div>

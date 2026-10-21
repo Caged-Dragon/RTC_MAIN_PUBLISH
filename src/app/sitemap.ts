@@ -1,17 +1,14 @@
 import type { MetadataRoute } from "next";
-import { getSettings } from "@/lib/cms";
-import { normalizeSiteBase } from "@/lib/utils";
+import { getPublishedPages } from "@/lib/cms";
 
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const settings = await getSettings();
-  const base = normalizeSiteBase(settings["seo.canonical_base"]);
-  const homepage = new URL("/", base).toString();
-
-  return [{
-    url: homepage,
-    changeFrequency: "daily",
-    priority: 1,
-  }];
+  const pages = await getPublishedPages();
+  const base = "https://rtcrackers.com";
+  return pages.filter((page) => page.seo?.robots_index !== false).map((page) => ({
+    url: page.is_homepage || page.slug === "home" ? `${base}/` : `${base}/${page.slug}`,
+    changeFrequency: page.slug === "2026-price-list" ? "daily" : "weekly",
+    priority: page.is_homepage || page.slug === "home" ? 1 : page.slug === "2026-price-list" ? 0.9 : 0.65,
+  }));
 }

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import ProductCard from "@/components/ProductCard";
 import type { Category, ComboPack, Product } from "@/lib/cms";
-import { CART_URL, inr } from "@/lib/utils";
+import { CART_URL, inr, cartHandoffUrl } from "@/lib/utils";
 
 const CATEGORY_IMAGES: Array<[string, string]> = [
   ["SPARKLER", "/showcase/redthunder_sparklers_1791297554442.jpg"],
@@ -35,17 +35,16 @@ function categoryImage(category: Category) {
 type Props = { products: Product[]; categories: Category[]; combos: ComboPack[] };
 
 const BUDGET_OPTIONS = [
-  { value: "500", amount: "₹500", label: "Products under ₹500", note: "Smaller shopping baskets" },
-  { value: "1000", amount: "₹1,000", label: "Products under ₹1,000", note: "More choices to explore" },
-  { value: "2000", amount: "₹2,000", label: "Products under ₹2,000", note: "Explore a wider range" },
-  { value: "5000", amount: "₹5,000", label: "Products under ₹5,000", note: "Browse higher-value items" },
+  { value: "500", amount: "₹500", label: "Products up to ₹500", note: "Smaller items" },
+  { value: "1000", amount: "₹1,000", label: "Products up to ₹1,000", note: "More choices" },
+  { value: "1500", amount: "₹1,500", label: "Products up to ₹1,500", note: "Explore more" },
 ];
 
 const ORDER_STEPS = [
-  { number: "01", title: "Select products", body: "Browse current catalogue items and prices." },
-  { number: "02", title: "Open the cart", body: "Continue to the existing ordering website." },
-  { number: "03", title: "Review your order", body: "Check the items and details in the cart." },
-  { number: "04", title: "Confirm arrangements", body: "Verify availability, payment and delivery terms with the business." },
+  { number: "01", title: "Browse the catalogue", body: "Explore current product names, categories and published rates." },
+  { number: "02", title: "Filter and compare", body: "Use search, category filters and price sorting to find product information." },
+  { number: "03", title: "Keep a local shortlist", body: "Use the companion site to review catalogue details. It does not submit an online order." },
+  { number: "04", title: "Ask for information", body: "Contact the business to confirm current details, serviceability and applicable terms." },
 ];
 
 export default function Catalogue({ products, categories, combos }: Props) {
@@ -130,9 +129,51 @@ export default function Catalogue({ products, categories, combos }: Props) {
     : featuredProducts.length > 0
       ? "Explore products highlighted in the current catalogue."
       : "A quick selection from our current product catalogue.";
+  const categoryAggregateSchemas = categories.map((category) => {
+    const categoryProducts = products.filter((product) => product.category_slug === category.slug && product.selling_price > 0);
+    if (!categoryProducts.length) return null;
+    return {
+      "@type": "Product",
+      name: `${category.category_name} – Makka & Wheat brand Sivakasi crackers`,
+      category: category.category_name,
+      brand: { "@type": "Brand", name: "Makka & Wheat" },
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "INR",
+        lowPrice: Math.min(...categoryProducts.map((product) => product.selling_price)),
+        highPrice: Math.max(...categoryProducts.map((product) => product.selling_price)),
+        offerCount: categoryProducts.length
+      }
+    };
+  }).filter(Boolean);
+  const comboAggregate = combos.filter((combo) => combo.current_price > 0);
+  const catalogSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ItemList",
+        name: "Makka & Wheat brand crackers – RedThunder factory-direct catalogue",
+        itemListElement: products.filter((product) => product.selling_price > 0).slice(0, 100).map((product, index) => ({
+          "@type": "ListItem", position: index + 1, item: {
+            "@type": "Product", name: product.product_name, sku: product.product_code || product.product_id,
+            category: product.category_name, image: product.image_url || undefined,
+            brand: { "@type": "Brand", name: "Makka & Wheat" },
+            description: `Catalogue information for ${product.product_name} from Rajukanna Fireworks, Sivakasi. This website does not accept online fireworks orders.`
+          }
+        }))
+      },
+      ...categoryAggregateSchemas,
+      ...(comboAggregate.length ? [{
+        "@type": "Product", name: "Sivakasi cracker combo packs – RedThunder Crackers", category: "Combo Packs",
+        brand: { "@type": "Brand", name: "Makka & Wheat" },
+        offers: { "@type": "AggregateOffer", priceCurrency: "INR", lowPrice: Math.min(...comboAggregate.map((combo) => combo.current_price)), highPrice: Math.max(...comboAggregate.map((combo) => combo.current_price)), offerCount: comboAggregate.length }
+      }] : [])
+    ]
+  };
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogSchema).replace(/</g, "\\u003c") }} />
       <section id="categories" className="section-pad category-section py-10 sm:py-12">
         <div className="mx-auto max-w-7xl px-4 lg:px-6">
           <div className="catalogue-section-heading mb-5 sm:mb-7">
@@ -159,7 +200,7 @@ export default function Catalogue({ products, categories, combos }: Props) {
                     <span className="category-tile-image-wrap">
                       <Image
                         src={categoryImage(category)}
-                        alt={category.alt_text || category.category_name}
+                        alt={`${category.alt_text || category.category_name} – Makka & Wheat brand Sivakasi crackers`}
                         width={520}
                         height={360}
                         sizes="(min-width:1280px) 12vw,(min-width:1024px) 24vw,(min-width:640px) 32vw,50vw"
@@ -195,27 +236,6 @@ export default function Catalogue({ products, categories, combos }: Props) {
         </section>
       )}
 
-      <section id="budget" className="budget-showcase-section section-pad py-9 sm:py-11">
-        <div className="mx-auto max-w-7xl px-4 lg:px-6">
-          <div className="catalogue-section-heading mb-5">
-            <div>
-              <p className="eyebrow mb-2">Quick price filters</p>
-              <h2 className="section-title">Shop by <span className="accent-red">budget</span></h2>
-              <p className="mt-2 text-sm text-[var(--muted)]">Filter the real catalogue by the price of an individual product.</p>
-            </div>
-          </div>
-          <div className="budget-card-grid grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {BUDGET_OPTIONS.map((option, index) => (
-              <button key={option.value} type="button" className={`budget-showcase-card budget-showcase-card-${index + 1}`} aria-pressed={budget === option.value} onClick={() => chooseBudget(option.value)}>
-                <span className="budget-card-amount">{option.amount}</span>
-                <strong>{option.label}</strong>
-                <small>{option.note}</small>
-                <span className="budget-card-action">Shop now <span aria-hidden="true">→</span></span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {combos.length > 0 && (
         <section id="combos" className="combo-showcase-section section-pad py-9 sm:py-11">
@@ -226,7 +246,7 @@ export default function Catalogue({ products, categories, combos }: Props) {
                 <h2 className="section-title">RedThunder <span className="accent-red">combos</span></h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">Current active combo packs and prices are loaded from the existing ordering database.</p>
               </div>
-              <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="text-button">View in cart <span aria-hidden="true">↗</span></a>
+              <a href={`${CART_URL}/combos`} target="_blank" rel="noopener noreferrer" className="text-button">View combo packs in cart <span aria-hidden="true">↗</span></a>
             </div>
             <div className="combo-grid grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
               {combos.map((combo) => (
@@ -234,7 +254,7 @@ export default function Catalogue({ products, categories, combos }: Props) {
                   <div className="combo-card-image">
                     <Image
                       src={combo.image_url || "/showcase/redthunder_gift_boxes_1791297541022.jpg"}
-                      alt={combo.name}
+                      alt={`${combo.name} – Makka & Wheat brand Sivakasi cracker combo pack`}
                       width={560}
                       height={380}
                       sizes="(min-width:1024px) 24vw,50vw"
@@ -246,7 +266,8 @@ export default function Catalogue({ products, categories, combos }: Props) {
                     <h3>{combo.short_title || combo.name}</h3>
                     <p className="combo-card-description">{combo.description || combo.tagline || "See the current combo details on the ordering site."}</p>
                     <p className="combo-card-count">{combo.item_count} product lines · {combo.budget_tier ? combo.budget_tier.toLowerCase() + " range" : "combo pack"}</p>
-                    <a href={CART_URL} target="_blank" rel="noopener noreferrer" className="combo-card-link">View combo <span aria-hidden="true">↗</span></a>
+                    <a href={`${CART_URL}/combos`} target="_blank" rel="noopener noreferrer" className="combo-card-link">View combo details <span aria-hidden="true">↗</span></a>
+                    <p className="product-minimum-note">For requested Sivakasi godown dispatch, the stated ₹3,000 minimum applies to permitted offline fulfilment; confirm details with sales.</p>
                   </div>
                 </article>
               ))}
@@ -314,14 +335,14 @@ export default function Catalogue({ products, categories, combos }: Props) {
             </div>
           )}
           {visibleCount < filteredProducts.length && <div className="mt-8 flex justify-center"><button type="button" className="brand-button px-7 py-3.5" onClick={() => setVisibleCount((count) => count + 16)}>Load 16 more products <span aria-hidden="true">↓</span></button></div>}
-          <p className="catalogue-note mt-6 text-center text-sm leading-6 text-[var(--muted)]">Prices and availability should be confirmed on the ordering site before payment. Product-specific cart actions remain on the existing cart website.</p>
+          <p className="catalogue-note mt-6 text-center text-sm leading-6 text-[var(--muted)]">Prices shown are catalogue references. The stated ₹3,000 minimum and COD terms apply only to permitted offline fulfilment arrangements confirmed directly with sales.</p>
         </div>
       </section>
       <section className="how-to-order-section section-pad py-9 sm:py-11" aria-labelledby="how-to-order-title">
         <div className="mx-auto max-w-7xl px-4 lg:px-6">
           <div className="mb-5">
-            <p className="eyebrow mb-2">A clear ordering journey</p>
-            <h2 id="how-to-order-title" className="section-title">How to <span className="accent-red">order</span></h2>
+            <p className="eyebrow mb-2">Find product information</p>
+            <h2 id="how-to-order-title" className="section-title">How to use the <span className="accent-red">catalogue</span></h2>
           </div>
           <ol className="order-step-grid grid grid-cols-2 gap-3 lg:grid-cols-4">
             {ORDER_STEPS.map((step) => (
@@ -331,7 +352,7 @@ export default function Catalogue({ products, categories, combos }: Props) {
               </li>
             ))}
           </ol>
-          <p className="mt-4 text-xs leading-5 text-[var(--muted)]">The current order is completed and confirmed through the existing cart and business workflow. Confirm final availability and delivery arrangements before payment.</p>
+          <p className="mt-4 text-xs leading-5 text-[var(--muted)]">This website and its companion storefront are catalogue/general-enquiry services only; they do not accept online fireworks orders or payments. For any legally permitted offline arrangement, contact the licensed business to confirm availability, serviceability, transport charges and the stated ₹3,000 dispatch minimum.</p>
         </div>
       </section>
 
